@@ -15,6 +15,17 @@ st.caption(
 )
 
 
+# ---------------------------------------------------------
+# BACKEND API URL
+# ---------------------------------------------------------
+
+BACKEND_URL = "https://ai-recruiting-agent-api.onrender.com/analyze-candidate"
+
+
+# ---------------------------------------------------------
+# INPUT SECTION
+# ---------------------------------------------------------
+
 left_col, right_col = st.columns([1, 1])
 
 with left_col:
@@ -39,6 +50,10 @@ analyze_button = st.button(
     use_container_width=True
 )
 
+
+# ---------------------------------------------------------
+# ANALYZE CANDIDATE
+# ---------------------------------------------------------
 
 if analyze_button:
 
@@ -71,9 +86,10 @@ if analyze_button:
             try:
 
                 response = requests.post(
-                    "http://127.0.0.1:8000/analyze-candidate",
+                    BACKEND_URL,
                     files=files,
-                    data=data
+                    data=data,
+                    timeout=120
                 )
 
                 if response.status_code == 200:
@@ -85,9 +101,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # CANDIDATE SUMMARY
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     st.subheader("Candidate Summary")
 
@@ -113,9 +129,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # SKILLS
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     skills_col1, skills_col2 = st.columns(2)
 
@@ -135,9 +151,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
-                    # STRENGTHS
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
+                    # CANDIDATE STRENGTHS
+                    # ---------------------------------------------------------
 
                     st.subheader("Candidate Strengths")
 
@@ -146,9 +162,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # EXPERIENCE ALIGNMENT
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     st.subheader("Experience Alignment")
 
@@ -158,9 +174,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # POTENTIAL GAPS
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     st.subheader("Potential Gaps")
 
@@ -169,9 +185,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # RECRUITER QUESTIONS
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     st.subheader("Recruiter Questions")
 
@@ -185,9 +201,9 @@ if analyze_button:
 
                     st.divider()
 
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
                     # ASSESSMENT REASONING
-                    # -----------------------------------------
+                    # ---------------------------------------------------------
 
                     st.subheader("Assessment Reasoning")
 
@@ -195,15 +211,42 @@ if analyze_button:
                         analysis["assessment_reasoning"]
                     )
 
+                    st.divider()
+
+                    st.caption(
+                        "AI-generated recruiting support. "
+                        "Final hiring decisions should be reviewed by a human."
+                    )
+
                 else:
 
                     st.error(
-                        f"Backend error: {response.text}"
+                        f"Backend error ({response.status_code}): "
+                        f"{response.text}"
                     )
+
+            except requests.exceptions.Timeout:
+
+                st.error(
+                    "The request took too long. "
+                    "The backend may be waking up because it is hosted on Render's free tier. "
+                    "Please wait a few seconds and try again."
+                )
 
             except requests.exceptions.ConnectionError:
 
                 st.error(
-                    "Could not connect to the FastAPI backend. "
-                    "Make sure Uvicorn is running."
+                    "Could not connect to the deployed FastAPI backend."
+                )
+
+            except requests.exceptions.RequestException as error:
+
+                st.error(
+                    f"Request failed: {error}"
+                )
+
+            except Exception as error:
+
+                st.error(
+                    f"Unexpected error: {error}"
                 )
