@@ -21,3 +21,21 @@ sample_data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment files in any directory
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Uploaded resumes and generated reports
+uploads/
+reports/
+*.sqlite3
+*.db
+
+# Testing and local cache
+.pytest_cache/
+.mypy_cache/
+.streamlit/cache/

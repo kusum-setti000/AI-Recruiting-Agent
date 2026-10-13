@@ -1,177 +1,198 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
-from app.services.resume_parser import extract_resume_text
-from app.models.schemas import JobDescription
-from app.prompts.screening_prompt import build_screening_prompt
-from app.services.llm_service import analyze_with_llm
-
+import logging
 import os
 import shutil
 import tempfile
 
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
-# Create the FastAPI application
+from app.models.schemas import JobDescription
+from app.prompts.screening_prompt import build_screening_prompt
+from app.services.llm_service import (
+    analyze_with_llm,
+    validate_job_alignment,
+)
+from app.services.resume_parser import extract_resume_text
+
+
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
     title="AI Recruiting Agent",
-    description="Code-first AI agent for resume and job description analysis",
-    version="1.0.0"
+    description="Resume analysis using a job title and job description",
+    version="1.1.0",
 )
 
 
-# ---------------------------------------------------
-# 1. HOME ENDPOINT
-# ---------------------------------------------------
+def validate_resume_file(file: UploadFile) -> None:
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="No resume was uploaded.",
+        )
+
+    if not file.filename.lower().endswith((".pdf", ".docx")):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF and DOCX files are supported.",
+        )
+
+
+def read_resume(file: UploadFile) -> str:
+    """Extract resume text and remove the temporary file."""
+
+    temporary_path = None
+
+    try:
+        suffix = os.path.splitext(file.filename)[1].lower()
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=suffix,
+        ) as temporary_file:
+            temporary_path = temporary_file.name
+
+            shutil.copyfileobj(
+                file.file,
+                temporary_file,
+            )
+
+        resume_text = extract_resume_text(
+            temporary_path,
+            file.filename,
+        )
+
+        if not resume_text or not resume_text.strip():
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "No readable text was found in the resume. "
+                    "Please upload a text-based PDF or DOCX."
+                ),
+            )
+
+        return resume_text
+
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            os.remove(temporary_path)
+
 
 @app.get("/")
 def home():
     return {
-        "message": "AI Recruiting Agent is running"
+        "message": "AI Recruiting Agent is running",
+        "version": app.version,
     }
 
 
-# ---------------------------------------------------
-# 2. RESUME UPLOAD ENDPOINT
-# ---------------------------------------------------
-
 @app.post("/upload-resume")
-async def upload_resume(file: UploadFile = File(...)):
-
-    if not file.filename:
-        raise HTTPException(
-            status_code=400,
-            detail="No file was uploaded."
-        )
-
-    if not (
-        file.filename.lower().endswith(".pdf")
-        or file.filename.lower().endswith(".docx")
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF and DOCX files are supported."
-        )
-
-    temporary_path = None
+def upload_resume(file: UploadFile = File(...)):
+    validate_resume_file(file)
 
     try:
-        suffix = os.path.splitext(file.filename)[1]
-
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=suffix
-        ) as temporary_file:
-
-            shutil.copyfileobj(
-                file.file,
-                temporary_file
-            )
-
-            temporary_path = temporary_file.name
-
-        extracted_text = extract_resume_text(
-            temporary_path,
-            file.filename
-        )
+        extracted_text = read_resume(file)
 
         return {
             "filename": file.filename,
-            "extracted_text": extracted_text
+            "extracted_text": extracted_text,
         }
 
-    except Exception as error:
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception("Resume extraction failed")
+
         raise HTTPException(
             status_code=500,
-            detail=str(error)
+            detail=(
+                "Resume extraction failed. "
+                "Check the backend terminal for details."
+            ),
         )
 
-    finally:
-        if temporary_path and os.path.exists(temporary_path):
-            os.remove(temporary_path)
-
-
-# ---------------------------------------------------
-# 3. JOB DESCRIPTION ENDPOINT
-# ---------------------------------------------------
 
 @app.post("/job-description")
 def receive_job_description(job: JobDescription):
+    job_title = job.job_title.strip()
+    job_description = job.job_description.strip()
+
+    if not job_title or not job_description:
+        raise HTTPException(
+            status_code=422,
+            detail="Please provide a job title and job description.",
+        )
 
     return {
-        "job_title": job.job_title,
-        "job_description": job.job_description,
-        "message": "Job description received successfully"
+        "job_title": job_title,
+        "job_description": job_description,
+        "message": "Job description received successfully",
     }
 
 
-# ---------------------------------------------------
-# # ---------------------------------------------------
-# 4. ANALYZE CANDIDATE ENDPOINT
-# ---------------------------------------------------
-
 @app.post("/analyze-candidate")
-async def analyze_candidate(
+def analyze_candidate(
     file: UploadFile = File(...),
     job_title: str = Form(...),
-    job_description: str = Form(...)
+    job_description: str = Form(...),
 ):
+    validate_resume_file(file)
 
-    if not file.filename:
+    job_title = job_title.strip()
+    job_description = job_description.strip()
+
+    if not job_title or not job_description:
         raise HTTPException(
-            status_code=400,
-            detail="No resume was uploaded."
+            status_code=422,
+            detail="Please provide a job title and job description.",
         )
-
-    if not (
-        file.filename.lower().endswith(".pdf")
-        or file.filename.lower().endswith(".docx")
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF and DOCX files are supported."
-        )
-
-    temporary_path = None
 
     try:
-        suffix = os.path.splitext(file.filename)[1]
+        # Validate the job title against the JD first.
+        alignment = validate_job_alignment(
+            job_title=job_title,
+            job_description=job_description,
+        )
 
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=suffix
-        ) as temporary_file:
-
-            shutil.copyfileobj(
-                file.file,
-                temporary_file
+        # Stop before candidate analysis if the role is inconsistent
+        # or there is insufficient information.
+        if alignment.status != "aligned":
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "status": alignment.status,
+                    "message": alignment.reason,
+                },
             )
 
-            temporary_path = temporary_file.name
+        resume_text = read_resume(file)
 
-        resume_text = extract_resume_text(
-            temporary_path,
-            file.filename
-        )
-
+        # Include all three inputs in the candidate analysis prompt.
         screening_prompt = build_screening_prompt(
-            resume_text,
-            job_description
+            resume_text=resume_text,
+            job_description=job_description,
+            job_title=job_title,
         )
 
-        ai_analysis = analyze_with_llm(
-            screening_prompt
-        )
+        ai_analysis = analyze_with_llm(screening_prompt)
 
         return {
             "candidate_resume": file.filename,
             "job_title": job_title,
-            "ai_analysis": ai_analysis
+            "job_alignment": alignment.model_dump(),
+            "ai_analysis": ai_analysis.model_dump(),
         }
 
-    except Exception as error:
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception("Candidate analysis failed")
+
         raise HTTPException(
             status_code=500,
-            detail=str(error)
+            detail=(
+                "Candidate analysis failed. "
+                "Check the backend terminal for details."
+            ),
         )
-
-    finally:
-        if temporary_path and os.path.exists(temporary_path):
-            os.remove(temporary_path)
