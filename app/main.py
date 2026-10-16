@@ -1,3 +1,4 @@
+
 import logging
 import os
 import shutil
@@ -6,22 +7,30 @@ import tempfile
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from app.models.schemas import JobDescription
-from app.prompts.screening_prompt import build_screening_prompt
-from app.services.llm_service import (
-    analyze_with_llm,
-    validate_job_alignment,
-)
+from app.services.llm_service import validate_job_alignment
+from app.services.screening_graph import run_screening_graph
 from app.services.resume_parser import extract_resume_text
 
+
+# ==========================================================
+# 1. APPLICATION CONFIGURATION
+# ==========================================================
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="AI Recruiting Agent",
-    description="Resume analysis using a job title and job description",
-    version="1.1.0",
+    title="TalentFlow AI Recruiting Agent",
+    description=(
+        "AI-powered resume screening using "
+        "FastAPI, LangChain, and LangGraph"
+    ),
+    version="1.2.0",
 )
 
+
+# ==========================================================
+# 2. VALIDATE RESUME FILE
+# ==========================================================
 
 def validate_resume_file(file: UploadFile) -> None:
     if not file.filename:
@@ -37,8 +46,15 @@ def validate_resume_file(file: UploadFile) -> None:
         )
 
 
+# ==========================================================
+# 3. EXTRACT RESUME TEXT
+# ==========================================================
+
 def read_resume(file: UploadFile) -> str:
-    """Extract resume text and remove the temporary file."""
+    """
+    Extract resume text from PDF or DOCX
+    and remove the temporary file.
+    """
 
     temporary_path = None
 
@@ -77,16 +93,31 @@ def read_resume(file: UploadFile) -> str:
             os.remove(temporary_path)
 
 
+# ==========================================================
+# 4. HOME ENDPOINT
+# ==========================================================
+
 @app.get("/")
 def home():
     return {
-        "message": "AI Recruiting Agent is running",
+        "message": "TalentFlow AI Recruiting Agent is running",
         "version": app.version,
+        "frameworks": [
+            "FastAPI",
+            "LangChain",
+            "LangGraph",
+        ],
     }
 
 
+# ==========================================================
+# 5. RESUME UPLOAD ENDPOINT
+# ==========================================================
+
 @app.post("/upload-resume")
-def upload_resume(file: UploadFile = File(...)):
+def upload_resume(
+    file: UploadFile = File(...),
+):
     validate_resume_file(file)
 
     try:
@@ -112,15 +143,24 @@ def upload_resume(file: UploadFile = File(...)):
         )
 
 
+# ==========================================================
+# 6. JOB DESCRIPTION ENDPOINT
+# ==========================================================
+
 @app.post("/job-description")
-def receive_job_description(job: JobDescription):
+def receive_job_description(
+    job: JobDescription,
+):
     job_title = job.job_title.strip()
     job_description = job.job_description.strip()
 
     if not job_title or not job_description:
         raise HTTPException(
             status_code=422,
-            detail="Please provide a job title and job description.",
+            detail=(
+                "Please provide a job title "
+                "and job description."
+            ),
         )
 
     return {
@@ -130,32 +170,44 @@ def receive_job_description(job: JobDescription):
     }
 
 
+# ==========================================================
+# 7. CANDIDATE SCREENING ENDPOINT
+#    FASTAPI -> LANGGRAPH -> LANGCHAIN -> OPENAI
+# ==========================================================
+
 @app.post("/analyze-candidate")
 def analyze_candidate(
     file: UploadFile = File(...),
     job_title: str = Form(...),
     job_description: str = Form(...),
 ):
+    # Validate uploaded file type.
     validate_resume_file(file)
 
+    # Normalize job inputs.
     job_title = job_title.strip()
     job_description = job_description.strip()
 
     if not job_title or not job_description:
         raise HTTPException(
             status_code=422,
-            detail="Please provide a job title and job description.",
+            detail=(
+                "Please provide a job title "
+                "and job description."
+            ),
         )
 
     try:
-        # Validate the job title against the JD first.
+        # --------------------------------------------------
+        # STEP 1: VALIDATE JOB TITLE AND DESCRIPTION
+        # --------------------------------------------------
+
         alignment = validate_job_alignment(
             job_title=job_title,
             job_description=job_description,
         )
 
-        # Stop before candidate analysis if the role is inconsistent
-        # or there is insufficient information.
+        # Stop if job title and description are inconsistent.
         if alignment.status != "aligned":
             raise HTTPException(
                 status_code=422,
@@ -165,22 +217,58 @@ def analyze_candidate(
                 },
             )
 
+        # --------------------------------------------------
+        # STEP 2: EXTRACT RESUME CONTENT
+        # --------------------------------------------------
+
         resume_text = read_resume(file)
 
-        # Include all three inputs in the candidate analysis prompt.
-        screening_prompt = build_screening_prompt(
-            resume_text=resume_text,
-            job_description=job_description,
+        # --------------------------------------------------
+        # STEP 3: EXECUTE LANGGRAPH WORKFLOW
+        # --------------------------------------------------
+
+        result = run_screening_graph(
             job_title=job_title,
+            job_description=job_description,
+            resume_text=resume_text,
+            prevalidated_alignment=alignment.model_dump(),
         )
 
-        ai_analysis = analyze_with_llm(screening_prompt)
+        # --------------------------------------------------
+        # STEP 4: VERIFY GRAPH ALIGNMENT RESULT
+        # --------------------------------------------------
+
+        graph_alignment = result["job_alignment"]
+
+        if graph_alignment["status"] != "aligned":
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "status": graph_alignment["status"],
+                    "message": graph_alignment["reason"],
+                },
+            )
+
+        # --------------------------------------------------
+        # STEP 5: EXTRACT AI SCREENING RESULT
+        # --------------------------------------------------
+
+        ai_analysis = result.get("ai_analysis")
+
+        if ai_analysis is None:
+            raise RuntimeError(
+                "LangGraph did not return candidate analysis."
+            )
+
+        # --------------------------------------------------
+        # STEP 6: RETURN RESULTS TO STREAMLIT
+        # --------------------------------------------------
 
         return {
             "candidate_resume": file.filename,
             "job_title": job_title,
-            "job_alignment": alignment.model_dump(),
-            "ai_analysis": ai_analysis.model_dump(),
+            "job_alignment": graph_alignment,
+            "ai_analysis": ai_analysis,
         }
 
     except HTTPException:
