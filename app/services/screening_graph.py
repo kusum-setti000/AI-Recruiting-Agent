@@ -1,13 +1,11 @@
 
-from langsmith import traceable
 import logging
-
-logger = logging.getLogger(__name__)
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from app.models.schemas import CandidateAnalysis, JobAlignment
+from app.core.scoring import assessment_from_score
+from app.models.schemas import CandidateAnalysis
 from app.prompts.screening_prompt import build_screening_prompt
 from app.services.llm_service import (
     analyze_with_llm,
@@ -15,40 +13,42 @@ from app.services.llm_service import (
 )
 
 
-# ==========================================================
-# 1. LANGGRAPH STATE
-# ==========================================================
+logger = logging.getLogger(__name__)
+
+
+# --------------------------------------------------
+# 1. LangGraph state
+# --------------------------------------------------
 
 class ScreeningState(TypedDict, total=False):
     job_title: str
     job_description: str
     resume_text: str
-
     job_alignment: dict[str, Any]
     screening_prompt: str
     ai_analysis: dict[str, Any]
 
-    validation_error: str
 
+# --------------------------------------------------
+# 2. Validate job alignment
+# --------------------------------------------------
 
-# ==========================================================
-# 2. NODE: VALIDATE JOB ALIGNMENT
-# ==========================================================
+def validate_alignment_node(
+    state: ScreeningState,
+) -> dict[str, Any]:
 
-def validate_alignment_node(state: ScreeningState):
     existing_alignment = state.get("job_alignment")
 
-    if existing_alignment is not None:
-        if existing_alignment.get("status") == "aligned":
-            logger.info(
-                "[LangGraph] Reusing prevalidated job alignment. "
-                "Skipping duplicate LLM call."
-            )
-            return {"job_alignment": existing_alignment}
+    if (
+        existing_alignment is not None
+        and existing_alignment.get("status") == "aligned"
+    ):
+        logger.info(
+            "Reusing prevalidated job alignment."
+        )
+        return {"job_alignment": existing_alignment}
 
-    logger.info(
-        "[LangGraph] Validating job alignment using LangChain."
-    )
+    logger.info("Validating job alignment.")
 
     alignment = validate_job_alignment(
         job_title=state["job_title"],
@@ -56,9 +56,11 @@ def validate_alignment_node(state: ScreeningState):
     )
 
     return {"job_alignment": alignment.model_dump()}
-# ==========================================================
-# 3. CONDITIONAL ROUTING
-# ==========================================================
+
+
+# --------------------------------------------------
+# 3. Conditional routing
+# --------------------------------------------------
 
 def route_after_alignment(
     state: ScreeningState,
@@ -72,13 +74,13 @@ def route_after_alignment(
     return "stop"
 
 
-# ==========================================================
-# 4. NODE: BUILD SCREENING PROMPT
-# ==========================================================
+# --------------------------------------------------
+# 4. Build screening prompt
+# --------------------------------------------------
 
 def build_prompt_node(
     state: ScreeningState,
-) -> dict:
+) -> dict[str, str]:
 
     prompt = build_screening_prompt(
         resume_text=state["resume_text"],
@@ -86,54 +88,36 @@ def build_prompt_node(
         job_title=state["job_title"],
     )
 
-    return {
-        "screening_prompt": prompt,
-    }
+    return {"screening_prompt": prompt}
 
 
-# ==========================================================
-# 5. NODE: ANALYZE CANDIDATE
-# ==========================================================
+# --------------------------------------------------
+# 5. Analyze candidate
+# --------------------------------------------------
 
 def analyze_candidate_node(
     state: ScreeningState,
-) -> dict:
+) -> dict[str, Any]:
 
     analysis: CandidateAnalysis = analyze_with_llm(
         state["screening_prompt"]
     )
 
-    return {
-        "ai_analysis": analysis.model_dump(),
-    }
+    return {"ai_analysis": analysis.model_dump()}
 
 
-# ==========================================================
-# 6. NODE: VALIDATE OUTPUT
-# ==========================================================
+# --------------------------------------------------
+# 6. Validate candidate analysis
+# --------------------------------------------------
 
 def validate_output_node(
     state: ScreeningState,
-) -> dict:
+) -> dict[str, Any]:
 
     analysis = state["ai_analysis"]
-
     score = analysis["match_score"]
 
-    if not isinstance(score, int) or not 0 <= score <= 100:
-        raise ValueError(
-            "AI screening score must be an integer "
-            "between 0 and 100."
-        )
-
-    if score >= 85:
-        expected_assessment = "Strong Match"
-    elif score >= 70:
-        expected_assessment = "Potential Match"
-    elif score >= 50:
-        expected_assessment = "Needs Human Review"
-    else:
-        expected_assessment = "Weak Match"
+    expected_assessment = assessment_from_score(score)
 
     if analysis["overall_assessment"] != expected_assessment:
         raise ValueError(
@@ -144,9 +128,9 @@ def validate_output_node(
     return {}
 
 
-# ==========================================================
-# 7. BUILD LANGGRAPH WORKFLOW
-# ==========================================================
+# --------------------------------------------------
+# 7. Build LangGraph workflow
+# --------------------------------------------------
 
 workflow = StateGraph(ScreeningState)
 
@@ -202,36 +186,26 @@ workflow.add_edge(
 screening_graph = workflow.compile()
 
 
-# ==========================================================
-# 8. PUBLIC WORKFLOW FUNCTION
-# ==========================================================
+# --------------------------------------------------
+# 8. Execute screening workflow
+# --------------------------------------------------
 
-
-
-@traceable(
-    name="TalentFlow Candidate Screening",
-    run_type="chain",
-    project_name="TalentFlow-AI",
-)
 def run_screening_graph(
     job_title: str,
     job_description: str,
     resume_text: str,
     prevalidated_alignment: dict | None = None,
-):
-    """
-    Execute the LangGraph candidate screening workflow.
+) -> dict[str, Any]:
 
-    Reuse prevalidated job alignment when available.
-    """
-
-    initial_state = {
+    initial_state: ScreeningState = {
         "job_title": job_title,
         "job_description": job_description,
         "resume_text": resume_text,
     }
 
     if prevalidated_alignment is not None:
-        initial_state["job_alignment"] = prevalidated_alignment
+        initial_state["job_alignment"] = (
+            prevalidated_alignment
+        )
 
     return screening_graph.invoke(initial_state)
