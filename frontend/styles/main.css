@@ -1,0 +1,166 @@
+
+/* =========================================================
+   TALENTFLOW AI — DESIGN SYSTEM
+   ========================================================= */
+
+:root {
+    --tf-bg: #0b1020;
+    --tf-surface: #111a2e;
+    --tf-card: #151f35;
+    --tf-border: #2b3853;
+
+    --tf-text: #f5f8ff;
+    --tf-muted: #aebbd1;
+
+    --tf-primary: #5269e8;
+    --tf-primary-hover: #4055ce;
+
+    --tf-success: #35c58a;
+    --tf-warning: #f2b84b;
+    --tf-danger: #f16b75;
+
+    --tf-radius: 14px;
+}
+
+
+/* =========================================================
+   APPLICATION LAYOUT
+   ========================================================= */
+
+.stApp {
+    background-color: var(--tf-bg);
+    color: var(--tf-text);
+}
+
+.block-container {
+    max-width: 1200px;
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+[data-testid="stSidebar"] {
+    background-color: var(--tf-surface);
+    border-right: 1px solid var(--tf-border);
+}
+
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+.hero {
+    padding: 24px 0 16px;
+}
+
+.hero h1 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--tf-text);
+    margin-bottom: 8px;
+}
+
+.hero p {
+    font-size: 1.05rem;
+    color: var(--tf-muted);
+}
+
+.section-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    color: var(--tf-text);
+}
+
+.muted {
+    color: var(--tf-muted);
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.result-card {
+    background: var(--tf-card);
+    border: 1px solid var(--tf-border);
+    border-radius: var(--tf-radius);
+    padding: 20px;
+    margin: 12px 0;
+}
+
+.result-card h3 {
+    margin-top: 0;
+    color: var(--tf-text);
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.stButton > button[kind="primary"],
+.stFormSubmitButton > button[kind="primary"] {
+    background-color: var(--tf-primary);
+    border-color: var(--tf-primary);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 10px;
+}
+
+.stButton > button[kind="primary"]:hover,
+.stFormSubmitButton > button[kind="primary"]:hover {
+    background-color: var(--tf-primary-hover);
+    border-color: var(--tf-primary-hover);
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   METRICS
+   ========================================================= */
+
+div[data-testid="stMetric"] {
+    background: var(--tf-card);
+    border: 1px solid var(--tf-border);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+
+/* =========================================================
+   FORM CONTROLS
+   ========================================================= */
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea {
+    border-radius: 10px;
+}
+
+div[data-testid="stFileUploader"] {
+    border-radius: 12px;
+}
+
+
+/* =========================================================
+   RESPONSIVE LAYOUT
+   ========================================================= */
+
+@media (max-width: 768px) {
+    .block-container {
+        padding-top: 1rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+    }
+
+    .result-card {
+        padding: 14px;
+    }
+}
