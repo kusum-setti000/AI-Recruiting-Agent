@@ -1,166 +1,91 @@
-
-/* =========================================================
-   TALENTFLOW AI — DESIGN SYSTEM
-   ========================================================= */
-
+/* TalentFlow AI — Gradient Enterprise / Executive Dashboard */
 :root {
-    --tf-bg: #0b1020;
-    --tf-surface: #111a2e;
-    --tf-card: #151f35;
-    --tf-border: #2b3853;
-
-    --tf-text: #f5f8ff;
-    --tf-muted: #aebbd1;
-
-    --tf-primary: #5269e8;
-    --tf-primary-hover: #4055ce;
-
-    --tf-success: #35c58a;
-    --tf-warning: #f2b84b;
-    --tf-danger: #f16b75;
-
-    --tf-radius: 14px;
+  --tf-bg:#080d22; --tf-surface:#111a35; --tf-card:#131d3a;
+  --tf-border:#35436c; --tf-text:#f6f5ff; --tf-muted:#b4c0df;
+  --tf-primary:#8743f5; --tf-success:#39d6aa; --tf-danger:#ff8eac;
+  --tf-gradient:linear-gradient(105deg,#4355f5,#8037f5 45%,#ed36d4 80%,#ff79c6);
 }
-
-
-/* =========================================================
-   APPLICATION LAYOUT
-   ========================================================= */
-
 .stApp {
-    background-color: var(--tf-bg);
-    color: var(--tf-text);
+  background:radial-gradient(ellipse at 85% 5%,rgba(100,37,219,.20),transparent 44%),
+    radial-gradient(ellipse at 5% 80%,rgba(51,78,174,.13),transparent 45%),var(--tf-bg);
+  color:var(--tf-text); font-family:Inter,"Segoe UI",sans-serif;
 }
-
-.block-container {
-    max-width: 1200px;
-    padding-top: 2rem;
-    padding-bottom: 3rem;
-}
-
+.block-container {max-width:1380px;padding-top:1.8rem;padding-bottom:3rem}
 [data-testid="stSidebar"] {
-    background-color: var(--tf-surface);
-    border-right: 1px solid var(--tf-border);
+  background:linear-gradient(180deg,#080d22,#111a35);border-right:1px solid var(--tf-border);
 }
-
-
-/* =========================================================
-   TYPOGRAPHY
-   ========================================================= */
-
-.hero {
-    padding: 24px 0 16px;
+[data-testid="stSidebar"] p,[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3 {color:#e8eaff}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:var(--tf-muted)}
+.tf-hero {
+  padding:clamp(24px,4vw,52px);margin-bottom:30px;overflow:hidden;position:relative;
+  border-radius:24px;border:1px solid rgba(193,113,255,.4);
+  background:radial-gradient(circle at 88% 20%,rgba(237,54,212,.38),transparent 36%),
+    linear-gradient(112deg,#101834,#20115b 65%,#4b147e);
+  box-shadow:0 18px 55px rgba(0,0,0,.18);
 }
-
-.hero h1 {
-    font-size: 2.6rem;
-    font-weight: 800;
-    line-height: 1.2;
-    color: var(--tf-text);
-    margin-bottom: 8px;
+.tf-hero:after {content:"";position:absolute;width:240px;height:240px;right:-85px;top:-95px;
+  border:1px solid rgba(255,255,255,.19);border-radius:48px;transform:rotate(32deg);pointer-events:none}
+.tf-kicker {font-size:.72rem;letter-spacing:.19em;color:#d4a5ff;font-weight:800}
+.tf-hero h1 {font-size:clamp(2.1rem,4.2vw,4.25rem);line-height:1.08;letter-spacing:-.045em;
+  color:white;max-width:900px;margin:14px 0;font-weight:850}
+.tf-hero h1 span {background:linear-gradient(90deg,#a06aff,#f275ee,#ff8dd0);
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tf-hero p {color:#e1dff9;font-size:1.03rem;max-width:700px;line-height:1.7}
+.tf-hero-tags {display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.tf-hero-tags span {padding:7px 13px;border:1px solid rgba(220,189,255,.3);
+  border-radius:999px;background:rgba(255,255,255,.07);font-size:.8rem;color:#f2e9ff}
+.tf-section-heading {display:flex;justify-content:space-between;align-items:end;gap:16px;margin:28px 0 16px}
+.tf-section-heading h2 {font-size:1.85rem;color:#fff;letter-spacing:-.025em;margin:5px 0}
+.tf-section-heading p,.tf-subheading p {color:var(--tf-muted);margin:0}
+.tf-complete {color:#65e9bb;background:rgba(32,163,114,.14);padding:8px 12px;
+  border:1px solid rgba(32,163,114,.3);border-radius:999px;font-size:.8rem;white-space:nowrap}
+.tf-empty {display:flex;align-items:center;gap:22px;margin:28px 0;padding:28px;
+  border:1px dashed #6856a0;border-radius:18px;background:rgba(21,29,64,.8)}
+.tf-empty-symbol {font-size:2.8rem;color:#d17aff}.tf-empty strong {font-size:1.2rem}
+.tf-empty p {color:var(--tf-muted);margin:5px 0 0}
+.tf-results-heading {margin-top:48px}
+.tf-summary {display:flex;align-items:center;gap:clamp(22px,4vw,56px);padding:30px;
+  background:linear-gradient(115deg,#171d46,#161a3c 60%,#231344);border:1px solid #58468c;
+  border-radius:22px;box-shadow:0 15px 35px rgba(0,0,0,.16)}
+.tf-score-ring {--score:0%;width:190px;height:190px;flex:none;border-radius:50%;padding:13px;
+  background:conic-gradient(#ed36d4 0%,#8743f5 var(--score),#2c315a var(--score) 100%);
+  box-shadow:0 0 36px rgba(148,55,245,.22)}
+.tf-score-core {width:100%;height:100%;border-radius:50%;background:#111933;display:flex;
+  align-items:center;justify-content:center;flex-direction:column}
+.tf-score-core strong {font-size:2.9rem;color:white;line-height:1.1}
+.tf-score-core small {color:var(--tf-muted);margin-top:7px}
+.tf-summary-copy {min-width:0;flex:1}
+.tf-summary-copy h3 {font-size:1.8rem;color:white;margin:10px 0}
+.tf-summary-meta {color:#c5d0eb;margin:4px 0;overflow-wrap:anywhere}
+.tf-summary-reason {color:#f0efff;line-height:1.65;margin-top:16px;max-height:8.3em;
+  overflow:auto;overflow-wrap:anywhere}
+.tf-subheading {margin:28px 0 13px}.tf-subheading h3 {color:white;font-size:1.25rem;margin:0 0 4px}
+.tf-panel {padding:23px;border:1px solid #394671;border-radius:18px;
+  background:linear-gradient(145deg,#172143,#101831);height:100%;min-height:150px}
+.tf-panel-title {font-weight:750;color:white;margin-bottom:17px;font-size:1.02rem}
+.tf-count {font-size:.72rem;color:#d5c6ff;background:#30285a;border-radius:999px;padding:3px 8px;margin-left:5px}
+.tf-chips {display:flex;gap:9px;flex-wrap:wrap}
+.tf-chip {font-size:.85rem;padding:7px 11px;border-radius:999px;max-width:100%;overflow-wrap:anywhere}
+.tf-chip-positive {background:rgba(36,183,135,.15);color:#8ff4d1;border:1px solid rgba(36,183,135,.24)}
+.tf-chip-negative {background:rgba(237,91,139,.13);color:#ffb6cb;border:1px solid rgba(237,91,139,.24)}
+.tf-detail-panel ul {padding-left:19px;margin:0;color:#e0e6fa;line-height:1.65}
+.tf-detail-panel li {margin-bottom:9px;overflow-wrap:anywhere}
+.tf-panel-empty {color:var(--tf-muted)}
+.stApp .stFormSubmitButton button[kind="primary"],.stApp .stButton button[kind="primary"] {
+  background:var(--tf-gradient)!important;border:0!important;color:white!important;
+  border-radius:12px;min-height:48px;font-weight:700}
+.stApp button:focus-visible {outline:3px solid #d7a7ff;outline-offset:2px}
+.stApp input::placeholder,.stApp textarea::placeholder {color:#aab6d5;opacity:1}
+.stApp [data-testid="stWidgetLabel"] {color:#e5eaff}
+.stApp div[data-testid="stTextInput"] input,.stApp div[data-testid="stTextArea"] textarea {
+  background:#182442;color:#fff;border:1px solid #47577e;border-radius:11px}
+.stApp div[data-testid="stFileUploader"] section {background:#141d3d;border:1px dashed #aa6cff;border-radius:12px}
+.stApp div[data-testid="stVerticalBlockBorderWrapper"]:has(>div) {border-radius:18px}
+@media(max-width:800px) {
+  .block-container {padding-top:1rem}.tf-hero {padding:27px 22px}
+  .tf-summary {flex-direction:column;align-items:flex-start;padding:22px}
+  .tf-score-ring {width:160px;height:160px;align-self:center}
+  .tf-section-heading {flex-wrap:wrap}.tf-empty {padding:18px}
 }
-
-.hero p {
-    font-size: 1.05rem;
-    color: var(--tf-muted);
-}
-
-.section-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    margin-top: 20px;
-    margin-bottom: 12px;
-    color: var(--tf-text);
-}
-
-.muted {
-    color: var(--tf-muted);
-}
-
-
-/* =========================================================
-   CARDS
-   ========================================================= */
-
-.result-card {
-    background: var(--tf-card);
-    border: 1px solid var(--tf-border);
-    border-radius: var(--tf-radius);
-    padding: 20px;
-    margin: 12px 0;
-}
-
-.result-card h3 {
-    margin-top: 0;
-    color: var(--tf-text);
-}
-
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-
-.stButton > button[kind="primary"],
-.stFormSubmitButton > button[kind="primary"] {
-    background-color: var(--tf-primary);
-    border-color: var(--tf-primary);
-    color: #ffffff;
-    font-weight: 700;
-    border-radius: 10px;
-}
-
-.stButton > button[kind="primary"]:hover,
-.stFormSubmitButton > button[kind="primary"]:hover {
-    background-color: var(--tf-primary-hover);
-    border-color: var(--tf-primary-hover);
-    color: #ffffff;
-}
-
-
-/* =========================================================
-   METRICS
-   ========================================================= */
-
-div[data-testid="stMetric"] {
-    background: var(--tf-card);
-    border: 1px solid var(--tf-border);
-    border-radius: 12px;
-    padding: 14px;
-}
-
-
-/* =========================================================
-   FORM CONTROLS
-   ========================================================= */
-
-div[data-testid="stTextInput"] input,
-div[data-testid="stTextArea"] textarea {
-    border-radius: 10px;
-}
-
-div[data-testid="stFileUploader"] {
-    border-radius: 12px;
-}
-
-
-/* =========================================================
-   RESPONSIVE LAYOUT
-   ========================================================= */
-
-@media (max-width: 768px) {
-    .block-container {
-        padding-top: 1rem;
-    }
-
-    .hero h1 {
-        font-size: 2rem;
-    }
-
-    .section-title {
-        font-size: 1.2rem;
-    }
-
-    .result-card {
-        padding: 14px;
-    }
-}
+@media(prefers-reduced-motion:reduce) {.stApp * {scroll-behavior:auto!important}}
