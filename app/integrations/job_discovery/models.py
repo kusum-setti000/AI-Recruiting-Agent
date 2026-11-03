@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
@@ -20,6 +20,7 @@ class DiscoveredJob(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
     job_url: HttpUrl
+    match_score: Optional[int] = Field(default=None, ge=0, le=100)
     discovered_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )

@@ -1,10 +1,11 @@
-﻿"""Combine job discovery providers and deduplicate results."""
+"""Combine job discovery providers and deduplicate results."""
 
 from app.integrations.job_discovery.models import (
     CandidateJobProfile,
     JobDiscoveryResult,
 )
 from app.integrations.job_discovery.greenhouse import GreenhouseProvider
+from app.integrations.job_discovery.matcher import calculate_match_score
 
 
 class JobDiscoveryService:
@@ -53,6 +54,14 @@ class JobDiscoveryService:
 
                 seen.add(key)
                 jobs.append(job)
+
+        for job in jobs:
+            job.match_score = calculate_match_score(profile, job)
+
+        jobs.sort(
+            key=lambda job: job.match_score or 0,
+            reverse=True,
+        )
 
         return JobDiscoveryResult(
             jobs=jobs,
