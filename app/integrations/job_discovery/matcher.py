@@ -103,6 +103,40 @@ def title_similarity(target: str, actual: str) -> float:
     )
 
 
+
+def extract_required_experience(description: str) -> float | None:
+    """Extract explicit minimum years of experience."""
+    patterns = (
+        r"([0-9]+(?:[.][0-9]+)?)[ ]*[+][ ]*years? +of +experience",
+        r"(?:minimum|min[.]?|at least) +([0-9]+(?:[.][0-9]+)?)[ ]+years? +of +experience",
+        r"([0-9]+(?:[.][0-9]+)?)[ ]*(?:-|to)[ ]*[0-9]+(?:[.][0-9]+)?[ ]+years? +of +experience",
+    )
+
+    matches = [
+        float(match.group(1))
+        for pattern in patterns
+        for match in re.finditer(pattern, description, re.IGNORECASE)
+    ]
+
+    return max(matches) if matches else None
+
+
+def experience_adjustment(
+    candidate_years: float | None,
+    required_years: float | None,
+) -> float:
+    """Return a conservative score penalty for experience gaps."""
+    if candidate_years is None or required_years is None:
+        return 0.0
+
+    gap = required_years - candidate_years
+
+    if gap <= 0:
+        return 0.0
+
+    return min(0.20, gap * 0.04)
+
+
 def calculate_match_score(
     profile: CandidateJobProfile,
     job: DiscoveredJob,
@@ -159,5 +193,14 @@ def calculate_match_score(
         score = skill_score
     else:
         score = 0.0
+
+    required_years = extract_required_experience(description)
+
+    penalty = experience_adjustment(
+        profile.experience_years,
+        required_years,
+    )
+
+    score = max(0.0, score - penalty)
 
     return max(0, min(100, round(score * 100)))
