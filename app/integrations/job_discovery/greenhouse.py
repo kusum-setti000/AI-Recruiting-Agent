@@ -23,11 +23,20 @@ class GreenhouseProvider:
         jobs = []
         seen = set()
 
-        keywords = [
+        title_keywords = [
             value.strip().lower()
-            for value in profile.target_titles + profile.skills
+            for value in profile.target_titles
             if value.strip()
         ]
+
+        skill_keywords = [
+            skill.strip().lower()
+            for group in profile.skills
+            for skill in group.split(",")
+            if skill.strip()
+        ]
+
+        keywords = title_keywords + skill_keywords
 
         for token in self.board_tokens:
             if not re.fullmatch(r"[A-Za-z0-9_-]+", token):
