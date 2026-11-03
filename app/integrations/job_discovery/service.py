@@ -7,6 +7,7 @@ from app.integrations.job_discovery.models import (
 from app.integrations.job_discovery.greenhouse import GreenhouseProvider
 from app.integrations.job_discovery.matcher import calculate_match_score
 from app.integrations.job_discovery.explanations import explain_match
+from app.integrations.job_discovery.recommendations import build_recommendation
 
 
 class JobDiscoveryService:
@@ -59,6 +60,7 @@ class JobDiscoveryService:
         for job in jobs:
             job.match_score = calculate_match_score(profile, job)
             job.match_explanation = explain_match(profile, job)
+            job.recommendation_summary = build_recommendation(job.match_explanation)
 
         jobs.sort(
             key=lambda job: job.match_score or 0,

@@ -32,6 +32,7 @@ class DiscoveredJob(BaseModel):
     job_url: HttpUrl
     match_score: Optional[int] = Field(default=None, ge=0, le=100)
     match_explanation: Optional[MatchExplanation] = None
+    recommendation_summary: Optional[str] = None
     discovered_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
