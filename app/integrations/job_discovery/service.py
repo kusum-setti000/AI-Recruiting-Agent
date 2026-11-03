@@ -1,4 +1,4 @@
-﻿"""Combine job discovery providers and deduplicate results."""
+"""Combine job discovery providers and deduplicate results."""
 
 from app.integrations.job_discovery.models import (
     CandidateJobProfile,
@@ -10,7 +10,17 @@ from app.integrations.job_discovery.greenhouse import GreenhouseProvider
 class JobDiscoveryService:
     def __init__(self, providers=None):
         self.providers = (
-            [GreenhouseProvider()]
+            [GreenhouseProvider(board_tokens=[
+                "greenhouse",
+                "datadog",
+                "cloudflare",
+                "figma",
+                "databricks",
+                "mongodb",
+                "elastic",
+                "stripe",
+                "reddit",
+            ])]
             if providers is None
             else providers
         )
