@@ -1,4 +1,4 @@
-﻿"""Greenhouse public job-board integration."""
+"""Greenhouse public job-board integration."""
 
 import re
 from html import unescape
@@ -63,15 +63,24 @@ class GreenhouseProvider:
                     ):
                         continue
 
-                if profile.location and not profile.remote_only:
-                    requested = profile.location.lower()
+                if profile.location:
+                    requested = profile.location.strip().lower()
                     location_lower = location.lower()
 
-                    if not (
-                        requested in location_lower
-                        or "anywhere in the united states" in location_lower
-                        or "remote" in location_lower
-                    ):
+                    if requested in ("united states", "usa", "us"):
+                        us_markers = (
+                            "united states",
+                            "usa",
+                            "u.s.",
+                        )
+
+                        if not any(
+                            marker in location_lower
+                            for marker in us_markers
+                        ):
+                            continue
+
+                    elif requested not in location_lower:
                         continue
 
                 external_id = str(item["id"])

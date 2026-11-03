@@ -1,4 +1,4 @@
-"""Combine job discovery providers and deduplicate results."""
+﻿"""Combine job discovery providers and deduplicate results."""
 
 from app.integrations.job_discovery.models import (
     CandidateJobProfile,
@@ -33,7 +33,20 @@ class JobDiscoveryService:
             provider_jobs = provider.search(profile)
 
             for job in provider_jobs:
-                key = str(job.job_url).split("?")[0].rstrip("/").lower()
+                # Greenhouse job IDs are unique within a company board.
+                # Do not strip URL query parameters: some companies
+                # identify individual jobs using gh_jid.
+                if job.source == "greenhouse" and job.external_id:
+                    key = (
+                        job.source.lower(),
+                        job.company.lower(),
+                        str(job.external_id),
+                    )
+                else:
+                    key = (
+                        job.source.lower(),
+                        str(job.job_url).rstrip("/").lower(),
+                    )
 
                 if key in seen:
                     continue

@@ -42,3 +42,29 @@ def test_discovery_service_with_no_providers():
 
     assert result.total_found == 0
     assert result.jobs == []
+
+def test_discovery_service_preserves_distinct_greenhouse_jobs():
+    first = DiscoveredJob(
+        source="greenhouse",
+        external_id="1001",
+        title="AI Engineer",
+        company="mongodb",
+        job_url="https://www.mongodb.com/careers/job/?gh_jid=1001",
+    )
+    second = DiscoveredJob(
+        source="greenhouse",
+        external_id="1002",
+        title="ML Engineer",
+        company="mongodb",
+        job_url="https://www.mongodb.com/careers/job/?gh_jid=1002",
+    )
+
+    provider = Mock()
+    provider.search.return_value = [first, second]
+
+    result = JobDiscoveryService(
+        providers=[provider]
+    ).search(CandidateJobProfile())
+
+    assert result.total_found == 2
+    assert {job.external_id for job in result.jobs} == {"1001", "1002"}
