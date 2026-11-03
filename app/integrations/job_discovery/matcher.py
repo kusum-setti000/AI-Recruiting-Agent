@@ -14,18 +14,43 @@ def normalize(text: str) -> str:
     )
 
 
+SKILL_ALIASES = {
+    "machine learning": ("ml",),
+    "generative ai": ("genai",),
+    "large language models": (
+        "llm",
+        "llms",
+        "large language model",
+    ),
+    "retrieval augmented generation": ("rag",),
+}
+
+
 def phrase_matches(phrase: str, text: str) -> bool:
-    """Match complete normalized phrases."""
+    """Match skills using bidirectional terminology aliases."""
     normalized_phrase = normalize(phrase)
     normalized_text = normalize(text)
 
     if not normalized_phrase:
         return False
 
-    return (
-        f" {normalized_phrase} "
-        in f" {normalized_text} "
+    candidates = {normalized_phrase}
+
+    for canonical, aliases in SKILL_ALIASES.items():
+        equivalents = {
+            normalize(canonical),
+            *(normalize(alias) for alias in aliases),
+        }
+
+        if normalized_phrase in equivalents:
+            candidates.update(equivalents)
+            break
+
+    return any(
+        f" {candidate} " in f" {normalized_text} "
+        for candidate in candidates
     )
+
 
 
 def title_tokens(title: str) -> set[str]:
@@ -90,10 +115,12 @@ def calculate_match_score(
         value for value in profile.target_titles
         if normalize(value)
     ]
-    skills = [
-        value for value in profile.skills
-        if normalize(value)
-    ]
+    skills = list(dict.fromkeys(
+        skill.strip()
+        for group in profile.skills
+        for skill in group.split(",")
+        if normalize(skill)
+    ))
 
     title_score = 0.0
 
