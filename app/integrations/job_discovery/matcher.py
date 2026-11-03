@@ -8,9 +8,13 @@ from app.integrations.job_discovery.models import (
 
 
 def normalize(text: str) -> str:
-    """Normalize text for consistent matching."""
+    """Normalize punctuation while preserving technical skill symbols."""
+    tokens = re.findall(r"[a-z0-9+#.]+", text.lower())
+
     return " ".join(
-        re.findall(r"[a-z0-9+#.]+", text.lower())
+        token.strip(".")
+        for token in tokens
+        if token.strip(".")
     )
 
 
