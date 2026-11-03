@@ -74,10 +74,34 @@ class GreenhouseProvider:
                             "u.s.",
                         )
 
-                        if not any(
-                            marker in location_lower
+                        us_states = {
+                            "AL", "AK", "AZ", "AR", "CA", "CO", "CT",
+                            "DE", "FL", "GA", "HI", "ID", "IL", "IN",
+                            "IA", "KS", "KY", "LA", "ME", "MD", "MA",
+                            "MI", "MN", "MS", "MO", "MT", "NE", "NV",
+                            "NH", "NJ", "NM", "NY", "NC", "ND", "OH",
+                            "OK", "OR", "PA", "RI", "SC", "SD", "TN",
+                            "TX", "UT", "VT", "VA", "WA", "WV", "WI",
+                            "WY", "DC",
+                        }
+
+                        has_us_country = any(
+                            re.search(
+                                r"(?<![a-z])" + re.escape(marker) + r"(?![a-z])",
+                                location_lower,
+                            )
                             for marker in us_markers
-                        ):
+                        )
+
+                        has_us_state = any(
+                            re.search(
+                                r"(?:^|,\s*|\s+)(" + "|".join(sorted(us_states)) + r")(?=$|[,;/\s])",
+                                location,
+                            )
+                            for _ in [0]
+                        )
+
+                        if not (has_us_country or has_us_state):
                             continue
 
                     elif requested not in location_lower:
