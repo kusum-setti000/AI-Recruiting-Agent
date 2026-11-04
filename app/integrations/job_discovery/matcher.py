@@ -97,6 +97,17 @@ def title_similarity(target: str, actual: str) -> float:
     if target_set == actual_set:
         return 1.0
 
+    # A more specific title can still represent the same
+    # profession: "Mechanical Engineer" and
+    # "Mechanical Design Engineer", for example.
+    # Do not reward a generic "Engineer" target alone.
+    if (
+        len(target_set) >= 2
+        and target_set.issubset(actual_set)
+        and len(actual_set - target_set) <= 2
+    ):
+        return 1.0
+
     intersection = target_set & actual_set
 
     if not intersection:

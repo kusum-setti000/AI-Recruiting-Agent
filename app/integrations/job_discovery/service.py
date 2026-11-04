@@ -5,13 +5,14 @@ from app.integrations.job_discovery.models import (
     JobDiscoveryResult,
 )
 from app.integrations.job_discovery.greenhouse import GreenhouseProvider
+from app.integrations.job_discovery.theirstack_provider import TheirStackProvider
 from app.integrations.job_discovery.matcher import calculate_match_score
 from app.integrations.job_discovery.explanations import explain_match
 from app.integrations.job_discovery.recommendations import build_recommendation
 
 
 class JobDiscoveryService:
-    def __init__(self, providers=None):
+    def __init__(self, providers=None, include_linkedin=False):
         self.providers = (
             [GreenhouseProvider(board_tokens=[
                 "greenhouse",
@@ -27,6 +28,10 @@ class JobDiscoveryService:
             if providers is None
             else providers
         )
+
+
+        if include_linkedin:
+            self.providers.append(TheirStackProvider(limit=5))
 
     def search(self, profile: CandidateJobProfile) -> JobDiscoveryResult:
         jobs = []
