@@ -1,236 +1,224 @@
-# AI Recruiting Agent
+# TalentFlow AI
 
-A code-first Generative AI recruiting assistant that analyzes candidate resumes against job descriptions and produces a structured, evidence-based candidate assessment.
+**AI-Powered Candidate Screening with Streamlit, LangGraph, and OpenAI**
 
-The project was built from scratch using Python, FastAPI, OpenAI API, Pydantic, and Streamlit.
+TalentFlow AI is a recruiter decision-support application that evaluates candidate resumes against job requirements and produces structured, evidence-based screening assessments.
+
+The application uses Streamlit for its user interface, LangGraph for screening workflow orchestration, and OpenAI for structured candidate analysis.
 
 ## Features
 
 - Upload candidate resumes in PDF or DOCX format
-- Extract resume text automatically
-- Compare resume evidence against a job description
-- Identify matching skills
-- Identify missing or unverified skills
-- Highlight candidate strengths
-- Analyze experience alignment
-- Identify potential gaps
+- Extract and process resume text
+- Compare candidate evidence against job requirements
+- Identify matching and missing or unverified skills
+- Assess experience alignment, strengths, and gaps
 - Generate recruiter follow-up questions
-- Generate an overall candidate assessment
-- Calculate a match score
+- Produce structured candidate assessments and match scores
 - Flag uncertain information for human review
-- Avoid using protected characteristics in candidate evaluation
+- Avoid evaluating candidates based on protected characteristics
 
 ## Architecture
 
 ```text
-User
-  |
-  v
-Streamlit Frontend
-  |
-  | HTTP Request
-  v
-FastAPI Backend
-  |
-  +--> Resume Parser
-  |
-  +--> Screening Prompt
-  |
-  +--> OpenAI API
-  |
-  v
-Structured Candidate Analysis
-  |
-  v
+Recruiter
+    |
+    v
+Streamlit UI
+    |
+    v
+LangGraph Screening Workflow
+    |
+    +--> Input Validation
+    |
+    +--> Document Loading (PDF/DOCX)
+    |
+    +--> Candidate Screening (OpenAI)
+    |
+    +--> Assessment Validation
+    |
+    v
+Structured Screening Results
+    |
+    v
 Streamlit Results Dashboard
 ```
 
+The Streamlit application invokes the LangGraph screening workflow directly. No separate FastAPI server is required.
+
 ## Tech Stack
 
-**Backend**
+**Application**
 - Python
-- FastAPI
+- Streamlit
 - Pydantic
 
-**Generative AI**
+**AI Orchestration**
+- LangChain
+- LangGraph
+- LangChain OpenAI
 - OpenAI API
-- Large Language Models (LLMs)
-- Prompt Engineering
-- Structured Outputs
-
-**Frontend**
-- Streamlit
 
 **Document Processing**
-- PDF parsing
-- DOCX parsing
+- PyMuPDF
+- python-docx
 
-**Integration**
-- REST API
-- Multipart file upload
-- JSON responses
+**Configuration and Observability**
+- python-dotenv
+- LangSmith integration, with tracing disabled by default
 
 ## Project Structure
 
 ```text
 AI-Recruiting-Agent/
-│
-├── app/
-│   ├── main.py
-│   ├── models/
-│   │   └── schemas.py
-│   ├── prompts/
-│   │   └── screening_prompt.py
-│   └── services/
-│       ├── llm_service.py
-│       └── resume_parser.py
-│
-├── frontend/
-│   └── streamlit_app.py
-│
-├── .gitignore
-├── requirements.txt
-└── README.md
+|
++-- app/
+|   +-- agents/
+|       +-- config.py
+|       +-- document_loader.py
+|       +-- graph.py
+|       +-- models.py
+|       +-- nodes.py
+|       +-- observability.py
+|       +-- prompts.py
+|       +-- schemas.py
+|       +-- scoring.py
+|
++-- frontend/
+|   +-- components/
+|   |   +-- screening_form.py
+|   |   +-- results.py
+|   |   +-- sidebar.py
+|   +-- styles/
+|   |   +-- main.css
+|   +-- streamlit_app.py
+|
++-- requirements.txt
++-- README.md
 ```
 
 ## How It Works
 
-1. A recruiter enters a job title and job description.
-2. The recruiter uploads a candidate resume.
-3. Streamlit sends the information to the FastAPI backend.
-4. The backend extracts text from the resume.
-5. A structured screening prompt combines the resume evidence with the job requirements.
-6. The application sends the prompt to the OpenAI API.
-7. The model returns structured candidate analysis.
-8. The Streamlit dashboard presents the results to the recruiter.
+1. The recruiter enters the job title and job description.
+2. The recruiter uploads a PDF or DOCX resume.
+3. Streamlit invokes the LangGraph screening workflow.
+4. The workflow validates the input and extracts resume content.
+5. The screening node evaluates resume evidence against the job requirements using OpenAI.
+6. The assessment is returned as structured data and validated.
+7. The Streamlit dashboard displays the screening results.
 
-## Candidate Analysis
+## Candidate Assessment
 
-The system produces:
+The application produces a structured assessment that may include:
 
-- Match Score
-- Matching Skills
-- Missing / Unverified Skills
-- Candidate Strengths
-- Experience Alignment
-- Potential Gaps
-- Recruiter Questions
-- Overall Assessment
-- Assessment Reasoning
+- Overall match score
+- Matching skills
+- Missing or unverified skills
+- Candidate strengths
+- Experience alignment
+- Potential gaps
+- Recruiter follow-up questions
+- Assessment reasoning
+- Human-review indicators
 
-Possible assessments include:
-
-- Strong Match
-- Potential Match
-- Needs Human Review
-- Weak Match
-
-## Responsible AI
-
-The application is designed as a recruiter decision-support tool rather than an autonomous hiring system.
-
-The screening prompt instructs the model to:
-
-- Use only information supported by the candidate's resume
-- Avoid assumptions about unverified skills
-- Avoid protected characteristics
-- Flag uncertain evidence for human review
-- Explain the reasoning behind the assessment
-
-Final hiring decisions should always remain with qualified human reviewers.
+All AI-generated assessments are intended to support, not replace, recruiter judgment.
 
 ## Setup
 
-Clone the repository:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/kusum-setti000/AI-Recruiting-Agent.git
 cd AI-Recruiting-Agent
 ```
 
-Create and activate a virtual environment:
+### 2. Create a virtual environment
 
 ```bash
 python -m venv venv
 ```
 
-Install dependencies:
+Activate it on Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+### 4. Configure environment variables
 
 Create a `.env` file in the project root:
 
-```text
+```env
 OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=your_supported_model
+LANGSMITH_TRACING=false
 ```
 
-Never commit the `.env` file or API keys to GitHub.
+Use an OpenAI model supported by your API account and compatible with the application's structured-output workflow.
+
+Never commit API keys or your `.env` file to Git.
 
 ## Run the Application
 
-Start the FastAPI backend:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-The backend will run at:
-
-```text
-http://127.0.0.1:8000
-```
-
-FastAPI Swagger documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Open a second terminal and start Streamlit:
+Start Streamlit from the project root:
 
 ```bash
 streamlit run frontend/streamlit_app.py
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:8501
 ```
 
-## Example
+The screening workflow runs directly inside the Streamlit application. No FastAPI or Uvicorn process is required.
 
-For a Generative AI Engineer position, the system can compare requirements such as:
+## Debugging
 
-- Python
-- LLMs
-- RAG
-- FastAPI
-- LangChain
-- Vector databases
-- Docker
-- Azure
-- REST APIs
+Open the project in VS Code.
 
-against evidence contained in the uploaded resume.
+Use the **Debug TalentFlow AI (Streamlit)** launch configuration to start the application and debug Python execution with breakpoints.
 
-The application then presents a structured candidate assessment and identifies requirements that require recruiter verification.
+Relevant workflow modules include:
+
+- `app/agents/graph.py` — workflow definition and execution
+- `app/agents/nodes.py` — screening workflow nodes
+- `app/agents/document_loader.py` — resume processing
+- `app/agents/scoring.py` — scoring logic
+- `app/agents/observability.py` — tracing configuration
+
+## Responsible AI
+
+TalentFlow AI is designed as a decision-support system, not an autonomous hiring authority.
+
+The screening workflow is intended to:
+
+- Base assessments on documented resume evidence
+- Avoid unsupported assumptions
+- Exclude protected characteristics from candidate evaluation
+- Identify missing or uncertain evidence
+- Support human review of screening outcomes
+
+Final hiring decisions must remain with qualified human reviewers.
 
 ## Future Improvements
 
 - Multi-resume batch screening
-- Vector database integration
-- RAG-based job and candidate knowledge retrieval
-- LangGraph-based agent orchestration
-- Candidate ranking
-- Evaluation and observability
+- Candidate comparison and ranking
+- Screening quality evaluation
+- Privacy-safe production observability
+- Authentication and role-based access
+- Persistent screening history
 - Docker containerization
 - Cloud deployment
-- Authentication and role-based access
-- Persistent analysis history
 
 ## Disclaimer
 
-This project is intended for demonstration and decision-support purposes. AI-generated assessments may contain errors and should not be used as the sole basis for employment decisions.
+TalentFlow AI is a demonstration and recruiter decision-support application. AI-generated assessments may contain errors or omissions and should not be used as the sole basis for employment decisions.
