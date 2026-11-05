@@ -86,8 +86,47 @@ def title_tokens(title: str) -> set[str]:
     return tokens - ignored
 
 
+
+MECHANICAL_TERMS = {
+    "mechanical", "manufacturing", "industrial",
+    "cad", "solidworks", "autocad", "product development",
+}
+
+SOFTWARE_INFRASTRUCTURE_TERMS = {
+    "site reliability", "sre", "devops",
+    "platform engineering", "cloud infrastructure",
+    "software", "backend", "frontend",
+}
+
+
+def discipline_compatible(target: str, actual: str) -> bool:
+    """Reject clear mechanical/software discipline mismatches."""
+    target_lower = target.lower()
+    actual_lower = actual.lower()
+
+    mechanical_target = any(
+        term in target_lower for term in MECHANICAL_TERMS
+    )
+    infrastructure_actual = any(
+        term in actual_lower
+        for term in SOFTWARE_INFRASTRUCTURE_TERMS
+    )
+
+    if mechanical_target and infrastructure_actual:
+        return False
+
+    if "reliability engineer" in target_lower:
+        if "site reliability" in actual_lower:
+            return False
+
+    return True
+
+
 def title_similarity(target: str, actual: str) -> float:
     """Measure title overlap without rewarding generic partial titles."""
+    if not discipline_compatible(target, actual):
+        return 0.0
+
     target_set = title_tokens(target)
     actual_set = title_tokens(actual)
 

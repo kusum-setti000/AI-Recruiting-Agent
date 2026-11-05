@@ -42,3 +42,19 @@ async def discover_from_resume(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+# TalentFlow React integration
+from fastapi.middleware.cors import CORSMiddleware
+from app.api.talentflow_routes import router as talentflow_router
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+app.include_router(talentflow_router)
